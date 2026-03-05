@@ -22,7 +22,6 @@ Every note is a markdown file with YAML frontmatter:
 ```markdown
 ---
 note_id: N-{8 hex chars}
-aliases: [N-{same 8 hex chars}]
 title: Short descriptive title
 created_at: {ISO 8601}
 updated_at: {ISO 8601}
@@ -33,18 +32,16 @@ tags: []
 source_url: ~
 ---
 
-Body content here. Link to other notes with [[N-xxxxxxxx]] or [[N-xxxxxxxx|descriptive text]].
+Body content here. Link with [[mechanized-convergence]] or [[mechanized-convergence|display text]].
 ```
-
-### Obsidian compatibility
-
-The `aliases` field is required. Obsidian resolves wikilinks by filename, not by frontmatter fields. Since filenames include a slug (`N-a1f3c7e2-mechanized-convergence.md`), the bare `[[N-a1f3c7e2]]` wikilink won't resolve without an alias. Always include the `note_id` in the `aliases` array so short-form wikilinks work.
 
 ### File naming
 
-`{note_id}-{slug}.md` — e.g., `N-a8f9b3c2-mechanized-convergence.md`
+`{slug}.md` — e.g., `mechanized-convergence.md`
 
-Generate note_id as `N-` followed by 8 random hex characters.
+The slug is a short, lowercase, hyphenated form of the title. Keep it concise but unambiguous within the vault. If a collision occurs, make the slug more specific.
+
+The `note_id` field (`N-` + 8 random hex chars) lives only in frontmatter as a stable internal identifier — it is not part of the filename.
 
 ### Folders
 
@@ -86,7 +83,7 @@ One note = one concept or claim. If the user gives you something containing mult
 
 ### Wikilinks
 
-When creating a note, check for related notes and include wikilinks inline in the body — not just in metadata. Format: `[[N-xxxxxxxx]]` or `[[N-xxxxxxxx|descriptive text]]`.
+When creating a note, check for related notes and include wikilinks inline in the body — not just in metadata. Obsidian resolves wikilinks by **filename** (without `.md`), so use the slug: `[[mechanized-convergence]]` or `[[mechanized-convergence|display text]]`.
 
 ### Inbox first
 
@@ -108,7 +105,7 @@ Always set `origin` and `epistemic` correctly:
 To find what links to a given note:
 
 ```bash
-grep -r "\[\[N-xxxxxxxx\]\]" {NOTES_DIR} --include="*.md" -l
+grep -r "\[\[slug-name" {NOTES_DIR} --include="*.md" -l
 ```
 
 Use this when the user asks "what links to this?" or when you want to show the user the network around a note before they decide to modify or archive it.

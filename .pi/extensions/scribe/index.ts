@@ -2,8 +2,11 @@
  * Scribe Extension
  *
  * Maintains a running trace of meaningful session transitions as a markdown file
- * with YAML frontmatter. Introduces a second loop: the user can view the trace
- * via the /scribe command or Ctrl+Shift+S overlay at any time.
+ * with YAML frontmatter. Trace entries are generated sideband — a lightweight LLM
+ * call runs after each agent loop, observing the conversation and deciding whether
+ * to add a trace entry. The main agent never sees or writes to the trace.
+ *
+ * The user can view the trace via /scribe or Ctrl+Shift+S at any time.
  *
  * Manages persistent state (.scribe-state.json) to track unreflected sessions
  * and surface nag prompts.
@@ -13,6 +16,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { convertToLlm } from "@mariozechner/pi-coding-agent";
+import { completeSimple, getModel } from "@mariozechner/pi-ai";
+import type { Message } from "@mariozechner/pi-ai";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -21,6 +27,10 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 interface ScribeConfig {
   notesDir: string | null; // null = use local .traces/
   nagThreshold: number;
+  /** Provider for sideband model (default: "anthropic") */
+  sidebandProvider: string;
+  /** Model ID for sideband calls (default: "claude-haiku-4-5") */
+  sidebandModel: string;
 }
 
 interface ScribeState {
@@ -62,6 +72,8 @@ function dateSlug(): string {
 function loadConfig(cwd: string): ScribeConfig {
   const notebookConfigPath = path.join(cwd, ".pi", "notebook.json");
   let notesDir: string | null = null;
+  let sidebandProvider = "anthropic";
+  let sidebandModel = "claude-haiku-4-5";
 
   if (fs.existsSync(notebookConfigPath)) {
     try {
@@ -71,6 +83,8 @@ function loadConfig(cwd: string): ScribeConfig {
           ? path.join(os.homedir(), raw.notes_dir.slice(1))
           : raw.notes_dir;
       }
+      if (raw.scribe_provider) sidebandProvider = raw.scribe_provider;
+      if (raw.scribe_model) sidebandModel = raw.scribe_model;
     } catch {}
   }
 
@@ -78,7 +92,7 @@ function loadConfig(cwd: string): ScribeConfig {
     notesDir = process.env.NOTES_DIR;
   }
 
-  return { notesDir, nagThreshold: 5 };
+  return { notesDir, nagThreshold: 5, sidebandProvider, sidebandModel };
 }
 
 function stateFilePath(): string {
@@ -188,6 +202,70 @@ function updateTraceFrontmatter(
 }
 
 // ---------------------------------------------------------------------------
+// Sideband trace generation
+// ---------------------------------------------------------------------------
+
+/** Summarize messages into a compact text representation for the scribe LLM */
+function messagesToText(messages: Message[]): string {
+  const parts: string[] = [];
+  for (const msg of messages) {
+    if (msg.role === "user") {
+      const text = typeof msg.content === "string"
+        ? msg.content
+        : msg.content
+            .filter((c): c is { type: "text"; text: string } => c.type === "text")
+            .map((c) => c.text)
+            .join("\n");
+      parts.push(`[user] ${text}`);
+    } else if (msg.role === "assistant") {
+      const textParts = msg.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text);
+      const toolCalls = msg.content
+        .filter((c): c is { type: "toolCall"; name: string; arguments: Record<string, any> } => c.type === "toolCall")
+        .map((c) => `${c.name}(${Object.entries(c.arguments).map(([k, v]) => {
+          const val = typeof v === "string" ? (v.length > 100 ? v.slice(0, 100) + "…" : v) : JSON.stringify(v);
+          return `${k}: ${val}`;
+        }).join(", ")})`);
+      if (textParts.length > 0) parts.push(`[assistant] ${textParts.join("\n")}`);
+      if (toolCalls.length > 0) parts.push(`[tools] ${toolCalls.join("; ")}`);
+    } else if (msg.role === "toolResult") {
+      const text = msg.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text.length > 200 ? c.text.slice(0, 200) + "…" : c.text)
+        .join("\n");
+      if (msg.isError) {
+        parts.push(`[tool error: ${msg.toolName}] ${text}`);
+      } else {
+        parts.push(`[tool result: ${msg.toolName}] ${text}`);
+      }
+    }
+  }
+  return parts.join("\n\n");
+}
+
+const SCRIBE_SYSTEM_PROMPT = `You are a session scribe. You observe an AI coding agent's conversation and maintain a trace document — a concise record of meaningful cognitive transitions.
+
+Your job: given the trace so far and the latest exchange, decide whether to add a new entry. Not every exchange deserves an entry. Only write one when something meaningfully changed:
+- A direction change, decision, or conclusion
+- A file was created, modified, or an important read happened
+- An open question surfaced or was resolved
+- The user shifted topics or expressed a new intent
+- A suggestion that might be useful to surface later
+
+If nothing meaningful happened (e.g., a clarifying question, a minor correction, routine tool output), respond with exactly: NO_ENTRY
+
+If something meaningful happened, respond with exactly one trace entry in this format:
+## HH:MM — Label
+1-3 sentence description.
+
+Use the current time provided. Keep entries concise and factual. You are an observer, not a participant. Do not editorialize or analyze — just record what happened and why it matters.
+
+If you notice something the user might want to revisit later but that wasn't explicitly discussed, you can mark it as a suggestion:
+## HH:MM — Suggestion
+Description of what might be worth revisiting.`;
+
+// ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
@@ -198,6 +276,8 @@ export default function scribeExtension(pi: ExtensionAPI) {
   let traceFile: string;
   let entryCount = 0;
   let cwd: string;
+  let sidebandInFlight = false;
+  let lastProcessedMessageCount = 0;
 
   // --- Session start: create trace, check nag ---
 
@@ -212,27 +292,17 @@ export default function scribeExtension(pi: ExtensionAPI) {
     updateStatus(ctx);
   });
 
-  // --- System prompt injection ---
+  // --- System prompt injection (lightweight — just tells the agent the trace exists) ---
 
   pi.on("before_agent_start", async (event, _ctx) => {
     let injection = `
 You have the scribe extension loaded. A trace file for this session is at:
 ${traceFile}
 
-At meaningful transitions — direction changes, decisions, open questions, file
-modifications, suggestions you want to surface — write a brief entry to this file
-using the write tool (append to the file). Keep entries to 1-3 sentences. Do not
-write an entry for every message; only when something meaningfully changes.
+The scribe automatically maintains this trace — you do not need to write to it.
+The user can view the trace via /scribe or Ctrl+Shift+S at any time.
 
-Format each entry as a markdown heading:
-## HH:MM — Label
-Brief description.
-
-You may also write suggestion entries when you notice something useful to the user
-that does not need to interrupt the main conversation. Mark these as:
-## HH:MM — Suggestion [agent]
-
-The user can write into the trace file directly via the scribe overlay. If you
+The user can also write into the trace file directly via the scribe overlay. If you
 notice new user-written entries (marked [user]) in the trace file at the start of
 a turn, acknowledge and respond to them appropriately.
 `;
@@ -270,6 +340,88 @@ Note: there are ${state.unreflected_trace_count} sessions since your last reflec
     }
   });
 
+  // --- Sideband trace generation on agent_end ---
+
+  pi.on("agent_end", async (event, ctx) => {
+    if (sidebandInFlight) return; // Skip if a sideband call is already running
+    if (!traceFile || !fs.existsSync(traceFile)) return;
+
+    const newMessages = event.messages;
+    if (!newMessages || newMessages.length === 0) return;
+
+    // Convert agent messages to LLM-compatible format for the scribe
+    let llmMessages: Message[];
+    try {
+      llmMessages = convertToLlm(newMessages);
+    } catch {
+      return; // If conversion fails, skip silently
+    }
+
+    // Don't block the main conversation — fire and forget
+    sidebandInFlight = true;
+    generateTraceEntry(llmMessages, ctx).finally(() => {
+      sidebandInFlight = false;
+    });
+  });
+
+  async function generateTraceEntry(newMessages: Message[], ctx: ExtensionContext): Promise<void> {
+    try {
+      const model = getModel(config.sidebandProvider as any, config.sidebandModel as any);
+      const apiKey = await ctx.modelRegistry.getApiKey(model);
+      if (!apiKey) return; // No API key available, skip silently
+
+      const traceContent = readTraceContents(traceFile);
+      const conversationText = messagesToText(newMessages);
+      const currentTime = timeShort();
+
+      const context = {
+        systemPrompt: SCRIBE_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user" as const,
+            content: `Current time: ${currentTime}
+
+TRACE SO FAR:
+${traceContent}
+
+LATEST EXCHANGE:
+${conversationText}
+
+Based on the latest exchange, should a new trace entry be added? Respond with the entry or NO_ENTRY.`,
+            timestamp: Date.now(),
+          },
+        ],
+      };
+
+      const response = await completeSimple(model, context, { apiKey });
+
+      // Extract text from response
+      const responseText = response.content
+        .filter((c): c is { type: "text"; text: string } => c.type === "text")
+        .map((c) => c.text)
+        .join("\n")
+        .trim();
+
+      if (responseText === "NO_ENTRY" || responseText.startsWith("NO_ENTRY")) {
+        return;
+      }
+
+      // Validate it looks like a trace entry (starts with ##)
+      if (responseText.startsWith("## ")) {
+        fs.appendFileSync(traceFile, responseText + "\n\n");
+
+        // Update entry count and status
+        if (fs.existsSync(traceFile)) {
+          const content = fs.readFileSync(traceFile, "utf-8");
+          entryCount = (content.match(/^## /gm) || []).length;
+        }
+        updateStatus(ctx);
+      }
+    } catch (err) {
+      // Sideband failures are silent — the trace just won't have this entry
+    }
+  }
+
   // --- Session shutdown: finalize trace ---
 
   pi.on("session_shutdown", async (_event, _ctx) => {
@@ -293,20 +445,6 @@ Note: there are ${state.unreflected_trace_count} sessions since your last reflec
     state.unreflected_trace_files.push(traceFile);
     state.nag_shown_this_session = false;
     saveState(state);
-  });
-
-  // --- Track when agent writes to trace file to update entry count ---
-
-  pi.on("tool_result", async (event, _ctx) => {
-    if (event.toolName === "write" || event.toolName === "edit") {
-      const input = event.input as { path?: string };
-      if (input.path && path.resolve(input.path) === path.resolve(traceFile)) {
-        if (fs.existsSync(traceFile)) {
-          const content = fs.readFileSync(traceFile, "utf-8");
-          entryCount = (content.match(/^## /gm) || []).length;
-        }
-      }
-    }
   });
 
   // --- Status bar ---

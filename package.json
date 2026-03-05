@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "busytown-pi": "github:gordonbrander/busytown-pi"
+  }
+}
