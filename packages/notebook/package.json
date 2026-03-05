@@ -1,0 +1,6 @@
+{
+  "name": "pi-notebook",
+  "version": "0.1.0",
+  "description": "Atomic note-taking skill for pi — Obsidian-compatible linked knowledge base",
+  "keywords": ["pi-package"]
+}

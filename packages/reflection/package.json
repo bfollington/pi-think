@@ -1,0 +1,6 @@
+{
+  "name": "pi-reflection",
+  "version": "0.1.0",
+  "description": "Metacognition skill for pi — synthesises patterns across session traces",
+  "keywords": ["pi-package"]
+}

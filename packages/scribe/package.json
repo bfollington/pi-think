@@ -1,0 +1,11 @@
+{
+  "name": "pi-scribe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Session trace extension for pi — maintains a running record of meaningful transitions",
+  "keywords": ["pi-package"],
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-ai": "*"
+  }
+}

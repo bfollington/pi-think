@@ -1,0 +1,12 @@
+{
+  "name": "pi-chronicle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Auto-documentation extension for pi — maintains living project docs via subagent",
+  "keywords": ["pi-package"],
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-agent-core": "*"
+  }
+}

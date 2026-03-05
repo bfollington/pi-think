@@ -1,6 +1,0 @@
-{
-  "private": true,
-  "dependencies": {
-    "@mariozechner/pi-ai": "*"
-  }
-}

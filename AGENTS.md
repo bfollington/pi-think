@@ -1,57 +1,53 @@
-# my-pi
+# pi-think
 
-Personal configuration repo for [pi.dev](https://pi.dev), a minimal terminal-based AI coding agent by Mario Zechner (`@mariozechner/pi-coding-agent`).
-
-## What pi.dev is
-
-Pi is a terminal-first coding agent with 4 built-in tools (`read`, `write`, `edit`, `bash`) and a TypeScript extension API. It supports 15+ LLM providers, tree-structured sessions, and is extensible via extensions, skills, prompts, and themes — bundled as pi packages.
+Monorepo of composable [pi.dev](https://pi.dev) packages — extensions, skills, and prompts for project memory.
 
 ## Repo purpose
 
-This repo holds project-local pi configuration: extensions, skills, prompts, and themes that customize pi for Ben's workflow. It maps to the `.pi/` directory structure that pi auto-discovers.
+This repo holds independently installable pi packages: each subdirectory under `packages/` is a standalone pi package that can be installed into any project via `pi install ./packages/<name>`.
 
-## Pi configuration structure
+## Package layout
 
 ```
-.pi/
-├── settings.json        # Project-specific settings (overrides ~/.pi/agent/settings.json)
-├── SYSTEM.md            # Replace default system prompt (or use APPEND_SYSTEM.md to extend)
-├── extensions/          # TypeScript extensions (*.ts or */index.ts)
-├── skills/              # SKILL.md files loaded on demand
-├── prompts/             # Reusable prompt templates
-└── themes/              # TUI color schemes
+packages/
+├── scribe/           # Extension: session trace recorder (sideband LLM)
+├── chronicle/        # Extension: auto-documentation (subagent with tools)
+├── notebook/         # Skill + prompt: atomic note-taking conventions
+└── reflection/       # Skill + prompt: cross-session metacognition
 ```
 
-Global config lives at `~/.pi/agent/` with the same structure. Project-local overrides global.
+Each package uses pi's conventional directory structure (`extensions/`, `skills/`, `prompts/`) and declares a `package.json` with `"keywords": ["pi-package"]`.
 
-## Extension API essentials
-
-Extensions export a default function receiving `ExtensionAPI`:
-
-```typescript
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-export default function (pi: ExtensionAPI) { ... }
-```
-
-Key capabilities:
-- **Lifecycle events**: `session_start`, `session_shutdown`, `before_agent_start`, `turn_start/end`, `message_end`, `tool_call`, `tool_result`, `input`, `session_compact`
-- **Tool registration**: `pi.registerTool({ name, description, parameters, execute })`
-- **Commands**: `pi.registerCommand("name", { description, handler })`
-- **Shortcuts**: `pi.registerShortcut("ctrl+x", { handler })`
-- **Context injection**: `context` event receives message array, returns modified version
-- **Tool gating**: `tool_call` event can block/prevent tool execution
-- **UI**: `ctx.ui.confirm()`, `ctx.ui.select()`, `ctx.ui.input()`, `ctx.ui.setStatus()`, `ctx.ui.setWidget()`
-
-Dependencies: add `package.json` next to extension, `npm install`, imports resolve from `node_modules/`.
-
-## Skills
-
-Skills are `SKILL.md` files with frontmatter (`name`, `description`) and procedural instructions. Use `{baseDir}` for relative paths. Invoked via `/skill:name` or auto-loaded by the agent.
-
-## Conventions
+## Pi package conventions
 
 - Extensions are TypeScript, loaded via `jiti` (no compilation needed)
-- Use `better-sqlite3` for any SQLite needs (sync, fast)
-- Subagents spawn via `pi -p "prompt" --extensions .pi/extensions/`
-- Schema definitions use `@sinclair/typebox`
-- AGENTS.md (or CLAUDE.md) files layer from global → parent dirs → cwd
+- Skills are `SKILL.md` files with YAML frontmatter
+- Prompts are `.md` files in a `prompts/` directory
+- Core pi packages (`@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, etc.) go in `peerDependencies` with `"*"` range
+- Third-party runtime deps go in `dependencies`
+
+## Development
+
+This repo's `.pi/settings.json` references all local packages for development:
+
+```json
+{
+  "packages": [
+    "./packages/scribe",
+    "./packages/chronicle",
+    "./packages/notebook",
+    "./packages/reflection"
+  ]
+}
+```
+
+Additional project-local config (`.pi/notebook.json`, `.pi/agents/`, `.pi/APPEND_SYSTEM.md`) stays in `.pi/` — these are development/testing resources, not distributable packages.
+
+## Key dependencies between packages
+
+All dependencies are **soft** — packages read each other's files but don't import each other's code:
+
+- **Reflection** reads scribe's trace files and writes to notebook's notes directory
+- **Scribe** is standalone
+- **Chronicle** is standalone
+- **Notebook** is standalone; when scribe is co-loaded, traces appear in the notes graph

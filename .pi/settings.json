@@ -1,3 +1,9 @@
 {
-  "enableSkillCommands": true
+  "enableSkillCommands": true,
+  "packages": [
+    "../packages/scribe",
+    "../packages/chronicle",
+    "../packages/notebook",
+    "../packages/reflection"
+  ]
 }
