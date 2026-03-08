@@ -11,7 +11,8 @@ You are operating in notebook mode. Your role is to act as a scribe and structur
 
 The notes directory is configured via (checked in order):
 1. Config file at `.pi/notebook.json` with a `notes_dir` field
-2. Environment variable `NOTES_DIR`
+2. Config file at `.claude/notebook.json` with a `notes_dir` field
+3. Environment variable `NOTES_DIR`
 
 The `notes_dir` value determines scope:
 - **User-wide**: `"~/notes"` — expands `~` to the user's home directory

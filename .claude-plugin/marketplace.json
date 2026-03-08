@@ -1,0 +1,33 @@
+{
+  "name": "pi-think",
+  "owner": { "name": "Ben Follington" },
+  "metadata": {
+    "description": "Composable packages for metacognitive loops with AI"
+  },
+  "plugins": [
+    {
+      "name": "notebook",
+      "source": "./packages/notebook",
+      "description": "Atomic note-taking with Obsidian-compatible linked notes",
+      "version": "0.1.0"
+    },
+    {
+      "name": "reflection",
+      "source": "./packages/reflection",
+      "description": "Cross-session metacognition — synthesise patterns from traces",
+      "version": "0.1.0"
+    },
+    {
+      "name": "qmd",
+      "source": "./packages/qmd",
+      "description": "Semantic search over markdown vaults via qmd",
+      "version": "0.1.0"
+    },
+    {
+      "name": "concepts",
+      "source": "./packages/concepts",
+      "description": "Domain ontology management — define and evolve project concepts",
+      "version": "0.1.0"
+    }
+  ]
+}

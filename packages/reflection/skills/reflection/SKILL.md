@@ -17,8 +17,9 @@ Scribe state is stored **per trace directory**, not globally. The state file liv
 
 To find it:
 1. Read `.pi/notebook.json` for `notes_dir` — resolve `~` against home, relative paths against project root
-2. If `notes_dir` is set, traces are at `{notes_dir}/traces/`
-3. If not set, check `NOTES_DIR` env var, then fall back to `{cwd}/.traces/`
+2. If not found, read `.claude/notebook.json` for `notes_dir`
+3. If `notes_dir` is set, traces are at `{notes_dir}/traces/`
+4. If not set, check `NOTES_DIR` env var, then fall back to `{cwd}/.traces/`
 4. The state file is `.scribe-state.json` inside that traces directory
 
 ```bash
@@ -38,7 +39,7 @@ Read each file listed in `unreflected_trace_files`. Skim them — read frontmatt
 
 ### Step 3: Previous reflections (if notebook is loaded)
 
-Check for the notes directory (from `.pi/notebook.json` or `NOTES_DIR` env var — see notebook skill for resolution rules). Resolve `~` against the user's home directory; resolve relative paths like `./notes` against the project root. If neither is configured, use `{cwd}/.notes/`. If available:
+Check for the notes directory (from `.pi/notebook.json`, `.claude/notebook.json`, or `NOTES_DIR` env var — see notebook skill for resolution rules). Resolve `~` against the user's home directory; resolve relative paths like `./notes` against the project root. If neither is configured, use `{cwd}/.notes/`. If available:
 
 ```bash
 ls -t {NOTES_DIR}/reflections/ | head -3

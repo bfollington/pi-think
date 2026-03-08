@@ -45,6 +45,8 @@ The loop compounds over time. Early sessions produce scattered notes. After a fe
 
 Each package is independently installable:
 
+### pi.dev
+
 Install everything at once from git:
 
 ```bash
@@ -60,6 +62,32 @@ pi install ~/code/pi-think/packages/notebook
 pi install ~/code/pi-think/packages/reflection
 pi install ~/code/pi-think/packages/qmd
 pi install ~/code/pi-think/packages/concepts
+```
+
+### Claude Code
+
+The skills and commands (notebook, reflection, qmd, concepts) are also available as a Claude Code plugin marketplace. Scribe and chronicle are pi-only extensions.
+
+Add the marketplace using the `/plugin` interactive UI or slash commands:
+
+```
+/plugin marketplace add bfollington/pi-think          # from GitHub
+/plugin marketplace add ./path/to/pi-think            # or local directory
+```
+
+Then install individual plugins:
+
+```
+/plugin install notebook@pi-think
+/plugin install reflection@pi-think
+/plugin install qmd@pi-think
+/plugin install concepts@pi-think
+```
+
+Or test locally during development:
+
+```bash
+claude --plugin-dir ./packages/notebook
 ```
 
 ### Scribe (extension)
@@ -140,4 +168,4 @@ packages/
 └── reflection/       # Skill + prompt: cross-session synthesis
 ```
 
-Each package follows pi's conventional directory layout (`extensions/`, `skills/`, `prompts/`) and can be installed independently via `pi install <path>`.
+Each package follows pi's conventional directory layout (`extensions/`, `skills/`, `prompts/`). Portable packages also include `.claude-plugin/plugin.json` manifests and `commands/` symlinks (pointing to `prompts/`) for Claude Code compatibility.

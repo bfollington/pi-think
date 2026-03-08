@@ -1,0 +1,5 @@
+{
+  "name": "qmd",
+  "description": "Semantic search over markdown vaults via qmd",
+  "version": "0.1.0"
+}

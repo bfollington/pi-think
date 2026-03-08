@@ -23,7 +23,8 @@ This is **not** a starting point. It's something that grows out of repeated use 
 
 Concepts are stored as markdown files in a directory configured via:
 1. `.pi/concepts.json` with a `concepts_dir` field
-2. Default: `.concepts/` in the project root
+2. `.claude/concepts.json` with a `concepts_dir` field
+3. Default: `.concepts/` in the project root
 
 ```jsonc
 // Custom location
