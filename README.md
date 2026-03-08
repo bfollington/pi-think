@@ -54,7 +54,7 @@ pi install ~/code/pi-think/packages/concepts
 Or from a git remote:
 
 ```bash
-pi install git:github.com/you/pi-think   # installs all packages
+pi install git:github.com/bfollington/pi-think   # installs all packages
 ```
 
 ### Scribe (extension)
