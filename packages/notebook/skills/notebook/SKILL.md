@@ -144,7 +144,62 @@ Notes live in subdirectories of the notes vault:
 - `supported` — has evidence or reasoning behind it
 - `settled` — the user considers this reliable
 
+## Breadcrumb Notes
+
+Breadcrumbs are a special note type: user-initiated snapshots of thinking state. They live in `{NOTES_DIR}/breadcrumbs/` and track themes, momentum, open questions, and connections across recent notes.
+
+**Filename**: `BC-YYYYMMDD-xxxx.md` (4 random alphanumeric chars)
+
+```markdown
+---
+note_id: BC-YYYYMMDD-xxxx
+type: breadcrumb
+created_at: {ISO 8601}
+momentum: exploring
+themes: [theme1, theme2, theme3]
+notes_considered: 12
+previous_crumb: "[[BC-previous-id]]"
+origin: llm-assisted
+---
+
+# Breadcrumb — {human readable date}
+
+## Summary
+[2-3 sentences on current thinking state]
+
+## Active Threads
+- **[Theme]**: [what's happening, what's open]
+
+## Open Questions
+- [Question that feels alive]
+
+## Connections
+[How ideas link. Surprising adjacencies. What's emerging.]
+```
+
+Breadcrumbs are different from traces (agent-written session records) and reflections (periodic pattern synthesis). A breadcrumb captures *where the user's head is at* — it's subjective, cross-session, and user-initiated.
+
+### Momentum vocabulary
+
+Used in breadcrumbs and available for any note's frontmatter:
+
+| Momentum | Meaning |
+|---|---|
+| `exploring` | Divergent — opening up new territory |
+| `converging` | Ideas crystallising, refining toward clarity |
+| `scattered` | Multiple threads, not yet unified |
+| `dormant` | Consolidation period, not much movement |
+| `breakthrough` | Major insight or synthesis achieved |
+
 ## Core Principles
+
+### The index card test
+
+Each note should pass the index card test: can it stand alone and say something meaningful when encountered later? Not post-it notes (too terse to be useful out of context) and not essays (too long for atomicity). An index card carries enough context to be useful in isolation.
+
+**Too granular** (post-it): "Less state machine, more differential equations"
+
+**Right granularity** (index card): "Less state machine, more differential equations — the system evolves continuously based on conditions, not discrete transitions. Small changes yield large effects because you're shaping a possibility space, not defining fixed states."
 
 ### Search before create
 
@@ -205,6 +260,17 @@ When the scribe extension is also loaded:
 - The trace file is itself a markdown file in the vault — it will appear in Obsidian's graph and backlink views
 
 When you create a note during a scribed session, also write a brief entry to the trace file noting which note was created and why.
+
+## Workflow Loop
+
+The notebook supports a compounding metacognitive loop through its prompts:
+
+1. **`/capture`** — Get things out of your head. Raw thought → atomic linked notes.
+2. **`/crumb`** — Snapshot where your thinking is at. Themes, momentum, open questions.
+3. **`/recent`** — Orient. Get a briefing on what's active, what's stalled, where to go.
+4. **`/reflect`** — Synthesise patterns across accumulated sessions (reflection skill).
+
+Each pass through the loop feeds the next: captures become the material for breadcrumbs, breadcrumbs inform briefings, briefings surface what to reflect on, reflections shape what you notice and capture next.
 
 ## What You Do NOT Do
 

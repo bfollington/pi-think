@@ -4,6 +4,7 @@
     "../packages/scribe",
     "../packages/chronicle",
     "../packages/notebook",
-    "../packages/reflection"
+    "../packages/reflection",
+    "../packages/qmd"
   ]
 }
