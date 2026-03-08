@@ -1,7 +1,7 @@
 .DS_Store
-.pi/extensions/scribe/node_modules
 node_modules
-.busytown/events.db
-.busytown/events.db-shm
-.busytown/events.db-wal
-.pi/extensions/busytown
+
+# Local dev config — not part of the packages
+.busytown/
+.pi/notebook.json
+.pi/agents/

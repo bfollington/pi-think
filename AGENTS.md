@@ -26,7 +26,7 @@ Each package uses pi's conventional directory structure (`extensions/`, `skills/
 - Skills are `SKILL.md` files with YAML frontmatter
 - Prompts are `.md` files in a `prompts/` directory
 - Core pi packages (`@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, etc.) go in `peerDependencies` with `"*"` range
-- Third-party runtime deps go in `dependencies`
+- **Third-party runtime deps used by extensions or other code must be hoisted to the root `package.json` `dependencies`**. When `pi install git:` clones this repo, it runs `npm install` at the repo root only. Individual `packages/*/package.json` files can document their deps for reference, but will not be installed. Individual package installations (e.g., `pi install ./packages/scribe`) also respect only the root package.json.
 
 ## Development
 
