@@ -11,6 +11,7 @@ pi install ~/code/pi-think/packages/scribe
 pi install ~/code/pi-think/packages/chronicle
 pi install ~/code/pi-think/packages/notebook
 pi install ~/code/pi-think/packages/reflection
+pi install ~/code/pi-think/packages/qmd
 ```
 
 Or from a git remote:
@@ -36,7 +37,19 @@ surface through work. View via `/chronicle`.
 
 Convention system for atomic, Obsidian-compatible notes with YAML frontmatter and
 wikilinks. Tells the agent how to create, link, and organise notes in a knowledge
-base. Works standalone or alongside scribe (traces become graph nodes).
+base. Works standalone or alongside scribe (traces become graph nodes). When the
+`obsidian` CLI is available, prefers it over raw filesystem operations for search,
+backlinks, frontmatter, and vault hygiene (orphans, dead ends, unresolved links).
+
+### QMD (skill)
+
+Semantic search over markdown vaults using [qmd](https://github.com/tobi/qmd).
+Hybrid BM25 + vector search with local models (no API calls). Teaches the agent
+to manage collections, run queries (keyword, vector, or hybrid with reranking),
+and keep the index fresh. Composes with notebook — replaces grep with semantic
+search in the "search before create" step.
+
+Requires `qmd` CLI installed separately.
 
 ### Reflection (skill)
 
@@ -50,13 +63,15 @@ Benefits from both scribe (source material) and notebook (output destination).
 Scribe     — temporal record: what happened, session by session
 Chronicle  — spatial record: what IS, the living state of the project
 Notebook   — knowledge base: notes, ideas, linked thinking
+QMD        — search: semantic retrieval across the knowledge base
 Reflection — synthesis: patterns across all of the above
 ```
 
 Each is independently useful. Together they form a full project memory system:
 - Scribe + Chronicle = decision register (when/why + what)
 - Scribe + Reflection = metacognitive loop
-- All four = self-documenting, self-reflecting project
+- Notebook + QMD = searchable knowledge base with semantic recall
+- All five = self-documenting, self-reflecting project with full-text + vector search
 
 ## Package Structure
 
@@ -65,6 +80,7 @@ packages/
 ├── scribe/           # Extension: session traces
 ├── chronicle/        # Extension: auto-documentation
 ├── notebook/         # Skill + prompt: note-taking conventions
+├── qmd/              # Skill: semantic search via qmd
 └── reflection/       # Skill + prompt: cross-session synthesis
 ```
 
