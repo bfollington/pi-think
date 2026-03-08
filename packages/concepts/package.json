@@ -1,0 +1,12 @@
+{
+  "name": "pi-concepts",
+  "version": "0.1.0",
+  "description": "Domain ontology for pi — define, relate, and evolve the conceptual model of your project",
+  "keywords": ["pi-package"],
+  "dependencies": {
+    "yaml": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  }
+}

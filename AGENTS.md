@@ -13,6 +13,8 @@ packages/
 ├── scribe/           # Extension: session trace recorder (sideband LLM)
 ├── chronicle/        # Extension: auto-documentation (subagent with tools)
 ├── notebook/         # Skill + prompt: atomic note-taking conventions
+├── qmd/              # Skill: semantic search via qmd
+├── concepts/         # Extension + skill + prompts: domain ontology
 └── reflection/       # Skill + prompt: cross-session metacognition
 ```
 

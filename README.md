@@ -48,6 +48,7 @@ pi install ~/code/pi-think/packages/chronicle
 pi install ~/code/pi-think/packages/notebook
 pi install ~/code/pi-think/packages/reflection
 pi install ~/code/pi-think/packages/qmd
+pi install ~/code/pi-think/packages/concepts
 ```
 
 Or from a git remote:
@@ -68,6 +69,7 @@ Auto-documentation. Spawns a subagent after each agent loop that observes the co
 
 Convention system for atomic, Obsidian-compatible notes with YAML frontmatter and wikilinks. Teaches the agent how to create, link, and organise notes in a knowledge base. Includes:
 
+- **`/setup`** — Configure pi-think for your project (choose notes directory, detect Obsidian vault, etc.)
 - **`/capture`** — Break raw thought into atomic linked notes (with the index card test and proposed chunking)
 - **`/crumb`** — Drop a breadcrumb: snapshot your thinking state with themes, momentum, and open questions
 - **`/recent`** — Get a headspace briefing on what's active, what's stalled, and where to re-enter
@@ -77,6 +79,18 @@ Works standalone or alongside scribe (traces become graph nodes in Obsidian). Wh
 ### QMD (skill)
 
 Semantic search over markdown vaults using [qmd](https://github.com/tobi/qmd). Hybrid BM25 + vector search with local models (no API calls). Composes with notebook — replaces grep with semantic search in the "search before create" step.
+
+### Concepts (extension + skill)
+
+Domain ontology management. Define the concepts that structure how you think about your project — not code types or database schemas, but the mental models you work with. A breadcrumb is different from a reflection is different from a trace, even though they're all markdown files. The distinctions matter because they shape how you *think*.
+
+Concepts are stored as markdown files in `.concepts/`, injected into the system prompt at session start, and updated through explicit conversation. Includes:
+
+- **`/define`** — Define or refine a concept
+- **`/suggest-concepts`** — Examine the project and propose concepts worth defining
+- **`/concepts`** — Quick-list the current ontology (extension command)
+
+**This is an advanced feature.** You wouldn't start here. It becomes relevant after you've been running the loop long enough that recurring vocabulary, implicit distinctions, and named patterns have emerged. Defining an ontology is a philosophical endeavour — it's powerful precisely because it forces you to articulate what you mean, but not everyone wants or needs that immediately.
 
 ### Reflection (skill)
 
@@ -89,6 +103,7 @@ Scribe     — temporal record: what happened, session by session
 Chronicle  — spatial record: what IS, the living state of the project
 Notebook   — knowledge base: notes, ideas, breadcrumbs, linked thinking
 QMD        — search: semantic retrieval across the knowledge base
+Concepts   — ontology: the named distinctions that structure thinking
 Reflection — synthesis: patterns across all of the above
 ```
 
@@ -97,7 +112,8 @@ Each is independently useful. Together they form a compounding system:
 - **Scribe + Reflection** = metacognitive loop (observe → synthesise)
 - **Notebook + QMD** = searchable knowledge base with semantic recall
 - **Notebook + Scribe** = traces as graph nodes, notes created during sessions linked to their context
-- **All five** = self-documenting, self-reflecting project with full-text + vector search
+- **Concepts + Reflection** = ontology that evolves as patterns are named
+- **All six** = self-documenting, self-reflecting project with shared vocabulary and full-text + vector search
 
 ## Design Philosophy
 
@@ -115,6 +131,7 @@ packages/
 ├── chronicle/        # Extension: auto-documentation
 ├── notebook/         # Skill + prompts: note-taking, breadcrumbs, briefings
 ├── qmd/              # Skill: semantic search via qmd
+├── concepts/         # Extension + skill + prompts: domain ontology
 └── reflection/       # Skill + prompt: cross-session synthesis
 ```
 

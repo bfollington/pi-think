@@ -5,6 +5,7 @@
     "../packages/chronicle",
     "../packages/notebook",
     "../packages/reflection",
-    "../packages/qmd"
+    "../packages/qmd",
+    "../packages/concepts"
   ]
 }
