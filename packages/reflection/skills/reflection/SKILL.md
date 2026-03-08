@@ -13,14 +13,24 @@ The goal is not to summarise what happened. It is to see patterns that are not v
 
 ### Step 1: Read scribe state
 
+Scribe state is stored **per trace directory**, not globally. The state file lives at `{TRACES_DIR}/.scribe-state.json`, right next to the traces it tracks.
+
+To find it:
+1. Read `.pi/notebook.json` for `notes_dir` — resolve `~` against home, relative paths against project root
+2. If `notes_dir` is set, traces are at `{notes_dir}/traces/`
+3. If not set, check `NOTES_DIR` env var, then fall back to `{cwd}/.traces/`
+4. The state file is `.scribe-state.json` inside that traces directory
+
 ```bash
-cat ~/.config/pi/scribe-state.json
+cat {TRACES_DIR}/.scribe-state.json
 ```
 
 This tells you:
 - `unreflected_trace_files` — the primary input (traces since last reflection)
 - `last_reflection_at` — when the last reflection happened
 - `unreflected_trace_count` — how many sessions to review
+
+All listed traces will be from this project — state is scoped per trace directory.
 
 ### Step 2: Read unreviewed traces
 
@@ -101,7 +111,7 @@ previous_reflection: {previous RF note_id or ~}
 
 ### Step 1: Update scribe state
 
-Read the current state from `~/.config/pi/scribe-state.json`, then write back with:
+Read the current state from `{TRACES_DIR}/.scribe-state.json` (the same per-project location you read in Step 1), then write back with:
 - `last_reflection_at` set to now (ISO 8601)
 - `unreflected_trace_count` set to 0
 - `unreflected_trace_files` set to `[]`

@@ -98,7 +98,15 @@ function loadConfig(cwd: string): ScribeConfig {
   return { notesDir, nagThreshold: 5, sidebandProvider, sidebandModel };
 }
 
-function stateFilePath(): string {
+function stateFilePath(traceDirPath?: string): string {
+  // Per-project state: lives alongside the traces it tracks
+  if (traceDirPath) {
+    if (!fs.existsSync(traceDirPath)) {
+      fs.mkdirSync(traceDirPath, { recursive: true });
+    }
+    return path.join(traceDirPath, ".scribe-state.json");
+  }
+  // Fallback to legacy global location (should not normally be reached)
   const configDir = path.join(os.homedir(), ".config", "pi");
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
@@ -106,13 +114,47 @@ function stateFilePath(): string {
   return path.join(configDir, "scribe-state.json");
 }
 
-function loadState(): ScribeState {
-  const p = stateFilePath();
+function loadState(traceDirPath?: string): ScribeState {
+  const p = stateFilePath(traceDirPath);
   if (fs.existsSync(p)) {
     try {
       return JSON.parse(fs.readFileSync(p, "utf-8"));
     } catch {}
   }
+
+  // Migrate from legacy global state if it exists and has traces for this directory
+  if (traceDirPath) {
+    const legacyPath = path.join(os.homedir(), ".config", "pi", "scribe-state.json");
+    if (fs.existsSync(legacyPath)) {
+      try {
+        const legacy: ScribeState = JSON.parse(fs.readFileSync(legacyPath, "utf-8"));
+        const myTraces = legacy.unreflected_trace_files.filter(f =>
+          f.startsWith(traceDirPath + path.sep) || f.startsWith(traceDirPath + "/")
+        );
+        if (myTraces.length > 0) {
+          const migrated: ScribeState = {
+            last_reflection_at: legacy.last_reflection_at,
+            unreflected_trace_count: myTraces.length,
+            unreflected_trace_files: myTraces,
+            nag_threshold: legacy.nag_threshold,
+            nag_shown_this_session: false,
+          };
+
+          // Remove migrated traces from legacy state
+          legacy.unreflected_trace_files = legacy.unreflected_trace_files.filter(
+            f => !myTraces.includes(f)
+          );
+          legacy.unreflected_trace_count = legacy.unreflected_trace_files.length;
+          fs.writeFileSync(legacyPath, JSON.stringify(legacy, null, 2));
+
+          // Save migrated state to per-project location
+          fs.writeFileSync(p, JSON.stringify(migrated, null, 2));
+          return migrated;
+        }
+      } catch {}
+    }
+  }
+
   return {
     last_reflection_at: null,
     unreflected_trace_count: 0,
@@ -122,8 +164,8 @@ function loadState(): ScribeState {
   };
 }
 
-function saveState(state: ScribeState): void {
-  const p = stateFilePath();
+function saveState(state: ScribeState, traceDirPath?: string): void {
+  const p = stateFilePath(traceDirPath);
   fs.writeFileSync(p, JSON.stringify(state, null, 2));
 }
 
@@ -277,6 +319,7 @@ export default function scribeExtension(pi: ExtensionAPI) {
   let state: ScribeState;
   let sessionId: string;
   let traceFile: string;
+  let traceDirPath: string;
   let entryCount = 0;
   let cwd: string;
   let sidebandInFlight = false;
@@ -287,7 +330,8 @@ export default function scribeExtension(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     cwd = ctx.cwd;
     config = loadConfig(cwd);
-    state = loadState();
+    traceDirPath = traceDir(config, cwd);
+    state = loadState(traceDirPath);
     sessionId = ulid();
     traceFile = createTraceFile(config, cwd, sessionId);
     entryCount = 1;
@@ -322,7 +366,7 @@ a turn, acknowledge and respond to them appropriately.
 Note: there are ${state.unreflected_trace_count} sessions since your last reflection on ${lastDate}. If the user has a moment, suggest \`/skill:reflection\` — they may not know this is available.
 `;
       state.nag_shown_this_session = true;
-      saveState(state);
+      saveState(state, traceDirPath);
     }
 
     return {
@@ -443,11 +487,11 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
       files_modified: JSON.stringify([...filesModified]),
     });
 
-    // Update persistent state
+    // Update persistent state (per-project)
     state.unreflected_trace_count++;
     state.unreflected_trace_files.push(traceFile);
     state.nag_shown_this_session = false;
-    saveState(state);
+    saveState(state, traceDirPath);
   });
 
   // --- Status bar ---
