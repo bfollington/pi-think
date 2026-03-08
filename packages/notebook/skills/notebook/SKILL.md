@@ -9,11 +9,24 @@ You are operating in notebook mode. Your role is to act as a scribe and structur
 
 ## Configuration
 
-The notes directory is configured via:
-1. Environment variable `NOTES_DIR`
-2. Config file at `.pi/notebook.json` with `{"notes_dir": "/path/to/notes"}`
+The notes directory is configured via (checked in order):
+1. Config file at `.pi/notebook.json` with a `notes_dir` field
+2. Environment variable `NOTES_DIR`
 
-If neither is set, ask the user where their notes live before proceeding.
+The `notes_dir` value determines scope:
+- **User-wide**: `"~/notes"` — expands `~` to the user's home directory
+- **Local (project-relative)**: `"./notes"` or `"notes"` — resolved against the project root (the directory containing `.pi/`)
+
+Examples:
+```jsonc
+// User-wide — notes shared across all projects
+{ "notes_dir": "~/notes" }
+
+// Local — notes live inside this project tree
+{ "notes_dir": "./notes" }
+```
+
+If neither config file nor env var is set, default to `{cwd}/.notes/` (local scope). Create the directory if it doesn't exist.
 
 ## Note Format
 

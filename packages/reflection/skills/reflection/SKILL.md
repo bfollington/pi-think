@@ -28,7 +28,7 @@ Read each file listed in `unreflected_trace_files`. Skim them — read frontmatt
 
 ### Step 3: Previous reflections (if notebook is loaded)
 
-Check for the notes directory (from `NOTES_DIR` env var or `.pi/notebook.json`). If available:
+Check for the notes directory (from `.pi/notebook.json` or `NOTES_DIR` env var — see notebook skill for resolution rules). Resolve `~` against the user's home directory; resolve relative paths like `./notes` against the project root. If neither is configured, use `{cwd}/.notes/`. If available:
 
 ```bash
 ls -t {NOTES_DIR}/reflections/ | head -3
@@ -67,7 +67,7 @@ Close with **2-3 questions** addressed to the user — things worth sitting with
 
 ## Output Format
 
-Save the reflection note. If a notes directory is configured, save to `{NOTES_DIR}/reflections/`. Otherwise save to `.traces/reflections/`.
+Save the reflection note to `{NOTES_DIR}/reflections/` (where `NOTES_DIR` is resolved per the configuration rules above — `~` paths, relative paths, or the default `{cwd}/.notes/`).
 
 Create the reflections directory if it doesn't exist.
 

@@ -81,7 +81,7 @@ function loadConfig(cwd: string): ScribeConfig {
       if (raw.notes_dir) {
         notesDir = raw.notes_dir.startsWith("~")
           ? path.join(os.homedir(), raw.notes_dir.slice(1))
-          : raw.notes_dir;
+          : path.resolve(cwd, raw.notes_dir);
       }
       if (raw.scribe_provider) sidebandProvider = raw.scribe_provider;
       if (raw.scribe_model) sidebandModel = raw.scribe_model;
@@ -89,7 +89,10 @@ function loadConfig(cwd: string): ScribeConfig {
   }
 
   if (!notesDir && process.env.NOTES_DIR) {
-    notesDir = process.env.NOTES_DIR;
+    const envDir = process.env.NOTES_DIR;
+    notesDir = envDir.startsWith("~")
+      ? path.join(os.homedir(), envDir.slice(1))
+      : path.resolve(cwd, envDir);
   }
 
   return { notesDir, nagThreshold: 5, sidebandProvider, sidebandModel };
