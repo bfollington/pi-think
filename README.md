@@ -42,6 +42,14 @@ The loop compounds over time. Early sessions produce scattered notes. After a fe
 
 Each package is independently installable:
 
+Install everything at once from git:
+
+```bash
+pi install git:github.com/bfollington/pi-think
+```
+
+Or install individual packages by local path (after cloning):
+
 ```bash
 pi install ~/code/pi-think/packages/scribe
 pi install ~/code/pi-think/packages/chronicle
@@ -49,12 +57,6 @@ pi install ~/code/pi-think/packages/notebook
 pi install ~/code/pi-think/packages/reflection
 pi install ~/code/pi-think/packages/qmd
 pi install ~/code/pi-think/packages/concepts
-```
-
-Or from a git remote:
-
-```bash
-pi install git:github.com/bfollington/pi-think   # installs all packages
 ```
 
 ### Scribe (extension)

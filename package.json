@@ -1,4 +1,25 @@
 {
+  "name": "pi-think",
+  "description": "Composable pi packages for metacognitive loops with AI",
+  "keywords": ["pi-package"],
+  "pi": {
+    "extensions": [
+      "packages/scribe/extensions",
+      "packages/chronicle/extensions",
+      "packages/concepts/extensions"
+    ],
+    "skills": [
+      "packages/notebook/skills",
+      "packages/reflection/skills",
+      "packages/qmd/skills",
+      "packages/concepts/skills"
+    ],
+    "prompts": [
+      "packages/notebook/prompts",
+      "packages/reflection/prompts",
+      "packages/concepts/prompts"
+    ]
+  },
   "dependencies": {
     "busytown-pi": "github:gordonbrander/busytown-pi"
   }
