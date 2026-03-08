@@ -28,6 +28,72 @@ Examples:
 
 If neither config file nor env var is set, default to `{cwd}/.notes/` (local scope). Create the directory if it doesn't exist.
 
+## Obsidian CLI Integration
+
+Check if the `obsidian` CLI is available:
+
+```bash
+command -v obsidian >/dev/null && echo "obsidian cli available" || echo "not found"
+```
+
+If available, **prefer it over raw filesystem operations** for search, links, and vault queries. It resolves files by name (like wikilinks) — no need to construct full paths.
+
+### Detect vault name
+
+The vault name can be set in `.pi/notebook.json`:
+
+```jsonc
+{ "notes_dir": ".", "vault": "game-tumbler" }
+```
+
+If not set, auto-detect by matching the resolved `notes_dir` against known vaults:
+
+```bash
+obsidian vaults verbose
+```
+
+Store the vault name once detected — pass it as `vault=<name>` to all obsidian commands.
+
+### Obsidian CLI replaces these operations
+
+| Operation | Without obsidian CLI | With obsidian CLI |
+|---|---|---|
+| **Search vault** | `grep -ri "keyword" {NOTES_DIR} --include="*.md" -l` | `obsidian search query="keyword" vault=<name>` |
+| **Search with context** | `grep -ri "keyword" {NOTES_DIR} --include="*.md" -B2 -A2` | `obsidian search:context query="keyword" vault=<name>` |
+| **Find backlinks** | `grep -r "\[\[slug-name" {NOTES_DIR} --include="*.md" -l` | `obsidian backlinks file="slug-name" vault=<name>` |
+| **Find outgoing links** | manual grep | `obsidian links file="name" vault=<name>` |
+| **Read a note** | read tool with full path | `obsidian read file="Note Name" vault=<name>` |
+| **Create a note** | write tool | `obsidian create name="Note Name" path="inbox/note-name.md" content="..." vault=<name>` |
+| **Append to a note** | edit tool | `obsidian append file="Note Name" content="..." vault=<name>` |
+| **Set frontmatter** | edit tool with regex | `obsidian property:set name="key" value="val" file="Note Name" vault=<name>` |
+| **Read frontmatter** | parse YAML manually | `obsidian property:read name="key" file="Note Name" vault=<name>` |
+| **Move/rename** | `mv` | `obsidian move file="Name" to="working/name.md" vault=<name>` |
+
+### Vault hygiene commands
+
+Use these when the user asks about vault health or during review:
+
+```bash
+# Notes nothing links to (islands)
+obsidian orphans vault=<name>
+
+# Notes with no outgoing links (dead ends)
+obsidian deadends vault=<name>
+
+# Wikilinks that point to non-existent notes
+obsidian unresolved vault=<name> counts
+
+# All tags with counts
+obsidian tags vault=<name> counts
+
+# All properties with counts
+obsidian properties vault=<name> counts
+```
+
+### When obsidian CLI is NOT available
+
+Fall back to the raw filesystem commands documented in the sections below. The grep-based search and file operations still work — the obsidian CLI is a convenience layer, not a hard requirement.
+
 ## Note Format
 
 Every note is a markdown file with YAML frontmatter:
@@ -82,7 +148,15 @@ Notes live in subdirectories of the notes vault:
 
 ### Search before create
 
-Before creating any note, search the vault for related content:
+Before creating any note, search the vault for related content.
+
+If `qmd` is available and a collection covers the vault, prefer semantic search:
+
+```bash
+qmd query "keyword or concept" -c <collection> -n 5 --files
+```
+
+Otherwise fall back to grep:
 
 ```bash
 grep -ri "keyword" {NOTES_DIR} --include="*.md" -l

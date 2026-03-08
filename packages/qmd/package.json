@@ -1,0 +1,6 @@
+{
+  "name": "pi-qmd",
+  "version": "0.1.0",
+  "description": "Semantic search skill for pi — hybrid BM25 + vector search over markdown vaults via qmd",
+  "keywords": ["pi-package"]
+}
