@@ -21,6 +21,7 @@
     ]
   },
   "dependencies": {
-    "busytown-pi": "github:gordonbrander/busytown-pi"
+    "busytown-pi": "github:gordonbrander/busytown-pi",
+    "yaml": "^2.0.0"
   }
 }
