@@ -1,7 +1,7 @@
 ---
 description: Quick note capture — break raw thought into atomic, linked notes
 ---
-First load the notebook skill by reading its SKILL.md (use /skill:notebook or find it in the loaded skills), then use its instructions to process this capture.
+First, load the notebook skill for vault location and note conventions. In pi use `/skill:notebook`; in Claude Code use `/notebook:notebook` or read the SKILL.md directly. Apply its instructions throughout this capture.
 
 I want to capture something. Here's the raw input — apply this process:
 
@@ -11,7 +11,12 @@ I want to capture something. Here's the raw input — apply this process:
 
 2. **Apply the index card test.** Each note should stand alone and say something meaningful when encountered later. Not post-it notes ("less state machine, more differential equations") — index cards that carry enough context to be useful in isolation ("Less state machine, more differential equations — the system evolves continuously based on conditions, not discrete transitions. Small changes yield large effects because you're shaping a possibility space, not defining fixed states.").
 
-3. **Search before create.** Check the vault for related notes (grep, obsidian CLI, or qmd if available). If a closely related note exists, prefer linking to it or elaborating it over creating a duplicate. Tell me what you found.
+3. **Search before create.** Check the vault for related notes. Use the best available tool:
+   - **qmd** (if available): `qmd query "{proposed note topic}" -n 5 --files` — semantic search catches related concepts even with different wording
+   - **obsidian CLI** (if available): `obsidian search query="{keyword}" vault=<name>`
+   - **grep** (fallback): `grep -ri "{keyword}" {NOTES_DIR} --include="*.md" -l`
+
+   If a closely related note exists, prefer linking to it or elaborating it over creating a duplicate. Tell me what you found.
 
 4. **Propose the breakdown.** Before creating anything, show me:
    - Each proposed note with a working title and one-sentence summary

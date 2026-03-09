@@ -1,7 +1,7 @@
 ---
 description: Examine the project and suggest concepts that could be defined in the ontology
 ---
-First load the concepts skill by reading its SKILL.md (use /skill:concepts or find it in the loaded skills).
+First, load the concepts skill. In pi use `/skill:concepts`; in Claude Code use `/concepts:concepts` or read the SKILL.md directly.
 
 Look at this project and suggest concepts that might be worth defining.
 

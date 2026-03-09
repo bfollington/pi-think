@@ -1,7 +1,7 @@
 ---
 description: Define or update a concept in the project ontology
 ---
-First load the concepts skill by reading its SKILL.md (use /skill:concepts or find it in the loaded skills).
+First, load the concepts skill. In pi use `/skill:concepts`; in Claude Code use `/concepts:concepts` or read the SKILL.md directly.
 
 I want to define or refine a concept. Here's what I'm thinking about:
 

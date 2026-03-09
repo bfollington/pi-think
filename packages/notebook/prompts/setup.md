@@ -1,6 +1,7 @@
 ---
 description: Configure pi-think — set up where notes, traces, and breadcrumbs are stored
 ---
+First, load the notebook skill for vault location and note conventions. In pi use `/skill:notebook`; in Claude Code use `/notebook:notebook` or read the SKILL.md directly.
 
 Walk me through setting up pi-think for this project.
 
@@ -11,11 +12,8 @@ Walk me through setting up pi-think for this project.
 Look at what's already configured:
 
 ```bash
-# Existing config
-cat .pi/notebook.json 2>/dev/null || echo "No config yet"
-
-# What packages are installed
-ls .pi/skills/ .pi/extensions/ .pi/prompts/ 2>/dev/null
+# Existing config (check both pi and Claude Code locations)
+cat .pi/notebook.json 2>/dev/null || cat .claude/notebook.json 2>/dev/null || echo "No config yet"
 
 # Obsidian CLI available?
 command -v obsidian >/dev/null && echo "obsidian cli: yes" || echo "obsidian cli: no"

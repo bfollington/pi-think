@@ -1,7 +1,7 @@
 ---
 description: Drop a breadcrumb — snapshot your current thinking state, themes, momentum, and open questions
 ---
-First load the notebook skill by reading its SKILL.md (use /skill:notebook or find it in the loaded skills) for vault location and note conventions.
+First, load the notebook skill for vault location and note conventions. In pi use `/skill:notebook`; in Claude Code use `/notebook:notebook` or read the SKILL.md directly.
 
 I want to drop a breadcrumb — a snapshot of where my head is at right now.
 
@@ -11,15 +11,24 @@ $@
 
 ## Process
 
-### 1. Gather recent material
+### 1. Detect available tools
+
+```bash
+command -v obsidian >/dev/null && echo "obsidian cli available" || echo "obsidian not found"
+command -v qmd >/dev/null && echo "qmd available" || echo "qmd not found"
+```
+
+If obsidian CLI is available, detect the vault name. If qmd is available, check for an indexed collection.
+
+### 2. Gather recent material
 
 Read what's been happening:
 
-- **Recent notes**: Check the inbox and working folders for notes created or modified in the last week or so. Read frontmatter first, then bodies that look relevant.
+- **Recent notes**: If **qmd** is available, use `qmd query "recent themes and active threads" -n 10` for a semantic sweep. If **obsidian CLI** is available, use `obsidian search query="..." vault=<name>`. Otherwise, check the inbox and working folders for notes created or modified in the last week or so. Read frontmatter first, then bodies that look relevant.
 - **Recent traces**: If scribe is loaded and a traces directory exists, skim the last 2-3 traces for session themes and transitions.
 - **Previous breadcrumbs**: Check `{NOTES_DIR}/breadcrumbs/` — read the most recent 1-2 for continuity. Note the previous crumb's ID for the `previous_crumb` link.
 
-### 2. Analyse
+### 3. Analyse
 
 From the gathered material, identify:
 
@@ -34,7 +43,7 @@ From the gathered material, identify:
 - **Open questions**: 3-5 questions that feel alive right now — unresolved, worth sitting with.
 - **Connections**: How ideas link to each other and to previous breadcrumbs. Surprising adjacencies.
 
-### 3. Write the breadcrumb
+### 4. Write the breadcrumb
 
 Create a note in `{NOTES_DIR}/breadcrumbs/` with this format:
 
@@ -73,11 +82,11 @@ origin: llm-assisted
 [How ideas link across threads. Surprising adjacencies. What's emerging.]
 ```
 
-### 4. Link
+### 5. Link
 
 Include wikilinks in the body to notes that were significant to this breadcrumb. Link to the previous breadcrumb via `previous_crumb` in frontmatter and a wikilink in the connections section.
 
-### 5. Report
+### 6. Report
 
 Show me:
 - The breadcrumb ID and momentum

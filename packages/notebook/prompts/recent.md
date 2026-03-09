@@ -1,7 +1,7 @@
 ---
 description: Headspace briefing — review recent activity and orient on what's alive
 ---
-First load the notebook skill by reading its SKILL.md (use /skill:notebook or find it in the loaded skills) for vault location and note conventions.
+First, load the notebook skill for vault location and note conventions. In pi use `/skill:notebook`; in Claude Code use `/notebook:notebook` or read the SKILL.md directly.
 
 Get me back in the loop. I want a briefing on what I've been doing and where the interesting threads are.
 
@@ -11,18 +11,38 @@ $@
 
 ## Process
 
-### 1. Gather recent material
+### 1. Detect available tools
 
-Check each of these, adapting to what's available:
+Before gathering material, check what search tools are available:
+
+```bash
+command -v obsidian >/dev/null && echo "obsidian cli available" || echo "obsidian not found"
+command -v qmd >/dev/null && echo "qmd available" || echo "qmd not found"
+```
+
+If obsidian CLI is available, detect the vault name (check config or run `obsidian vaults verbose`). If qmd is available, check `qmd collection list` for an indexed collection covering the vault.
+
+### 2. Gather recent material
+
+Check each of these, adapting to what's available. Prefer richer tools when present:
 
 **Notes** (required — this is the core):
+
+If a focus topic was provided and **qmd** is available:
 ```bash
-# Recent inbox notes
+qmd query "{focus topic}" -n 10 --files
+```
+
+If a focus topic was provided and **obsidian CLI** is available:
+```bash
+obsidian search query="{focus topic}" vault=<name>
+```
+
+Otherwise, fall back to filesystem listing:
+```bash
 find {NOTES_DIR}/inbox -name "*.md" -mtime -14 | head -20
-# Recent working notes
 find {NOTES_DIR}/working -name "*.md" -mtime -14 | head -20
 ```
-Or with obsidian CLI: `obsidian search query="..." vault=<name>`
 
 **Breadcrumbs** (if `breadcrumbs/` exists):
 ```bash
@@ -41,9 +61,9 @@ ls -t {NOTES_DIR}/reflections/ | head -3
 
 Read frontmatter and headings first. Dive into bodies only for items that seem significant.
 
-If arguments were provided, use them to filter (a time window like "week" or "month", or a topic to focus on).
+If arguments were provided, use them to filter (a time window like "week" or "month", or a topic to focus on). When a topic is given, use qmd or obsidian search to find thematically related notes rather than just listing by date.
 
-### 2. Analyse the landscape
+### 3. Analyse the landscape
 
 From the gathered material, identify:
 
@@ -53,7 +73,7 @@ From the gathered material, identify:
 - **Open questions**: Collect unresolved questions from breadcrumbs, notes, and reflections. Which feel most alive?
 - **Quiet areas**: Themes that used to appear but have gone silent.
 
-### 3. Present the briefing
+### 4. Present the briefing
 
 ```markdown
 # Headspace Briefing
@@ -85,7 +105,7 @@ If you want to pick up where you left off:
 - **Start fresh**: [suggestion for a quiet area or new thread]
 ```
 
-### 4. Offer follow-ups
+### 5. Offer follow-ups
 
 After the briefing, offer:
 - "Want me to expand on any thread?"
