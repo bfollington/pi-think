@@ -4,7 +4,9 @@ Composable [pi](https://pi.dev) packages for metacognitive loops with AI — cap
 
 This is not a specific note-taking workflow or productivity system. It's a modular starting point: a set of independently installable packages that help you grow the right way of thinking and working out of whatever knowledge system you're already using.
 
+<a href="https://www.youtube.com/watch?v=IeMgq9BHLmA">
 <img width="1582" height="1030" alt="image" src="https://github.com/user-attachments/assets/ac5fcc26-bbb3-4ae8-8a6d-9b2e21e12f9a" />
+</a>
 
 
 ## The Compounding Loop
