@@ -318,14 +318,23 @@ export default function scribeExtension(pi: ExtensionAPI) {
   let config: ScribeConfig;
   let state: ScribeState;
   let sessionId: string;
-  let traceFile: string;
+  let traceFile: string | null = null;
   let traceDirPath: string;
   let entryCount = 0;
   let cwd: string;
   let sidebandInFlight = false;
   let lastProcessedMessageCount = 0;
 
-  // --- Session start: create trace, check nag ---
+  /** Lazily create the trace file on first real entry */
+  function ensureTraceFile(): string {
+    if (!traceFile) {
+      traceFile = createTraceFile(config, cwd, sessionId);
+      entryCount = 1;
+    }
+    return traceFile;
+  }
+
+  // --- Session start: initialize config/state but don't create trace yet ---
 
   pi.on("session_start", async (_event, ctx) => {
     cwd = ctx.cwd;
@@ -333,8 +342,6 @@ export default function scribeExtension(pi: ExtensionAPI) {
     traceDirPath = traceDir(config, cwd);
     state = loadState(traceDirPath);
     sessionId = ulid();
-    traceFile = createTraceFile(config, cwd, sessionId);
-    entryCount = 1;
 
     updateStatus(ctx);
   });
@@ -342,9 +349,12 @@ export default function scribeExtension(pi: ExtensionAPI) {
   // --- System prompt injection (lightweight — just tells the agent the trace exists) ---
 
   pi.on("before_agent_start", async (event, _ctx) => {
+    const traceLocation = traceFile
+      ? traceFile
+      : `${traceDir(config, cwd)}/${sessionId}.md (will be created when first entry is recorded)`;
     let injection = `
 You have the scribe extension loaded. A trace file for this session is at:
-${traceFile}
+${traceLocation}
 
 The scribe automatically maintains this trace — you do not need to write to it.
 The user can view the trace via /scribe or Ctrl+Shift+S at any time.
@@ -391,7 +401,6 @@ Note: there are ${state.unreflected_trace_count} sessions since your last reflec
 
   pi.on("agent_end", async (event, ctx) => {
     if (sidebandInFlight) return; // Skip if a sideband call is already running
-    if (!traceFile || !fs.existsSync(traceFile)) return;
 
     const newMessages = event.messages;
     if (!newMessages || newMessages.length === 0) return;
@@ -417,7 +426,7 @@ Note: there are ${state.unreflected_trace_count} sessions since your last reflec
       const apiKey = await ctx.modelRegistry.getApiKey(model);
       if (!apiKey) return; // No API key available, skip silently
 
-      const traceContent = readTraceContents(traceFile);
+      const traceContent = traceFile ? readTraceContents(traceFile) : "(no entries yet)";
       const conversationText = messagesToText(newMessages);
       const currentTime = timeShort();
 
@@ -455,13 +464,12 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
 
       // Validate it looks like a trace entry (starts with ##)
       if (responseText.startsWith("## ")) {
-        fs.appendFileSync(traceFile, responseText + "\n\n");
+        const file = ensureTraceFile();
+        fs.appendFileSync(file, responseText + "\n\n");
 
         // Update entry count and status
-        if (fs.existsSync(traceFile)) {
-          const content = fs.readFileSync(traceFile, "utf-8");
-          entryCount = (content.match(/^## /gm) || []).length;
-        }
+        const content = fs.readFileSync(file, "utf-8");
+        entryCount = (content.match(/^## /gm) || []).length;
         updateStatus(ctx);
       }
     } catch (err) {
@@ -472,6 +480,7 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
   // --- Session shutdown: finalize trace ---
 
   pi.on("session_shutdown", async (_event, _ctx) => {
+    // Don't create a trace file just to finalize it — skip empty sessions
     if (!traceFile || !fs.existsSync(traceFile)) return;
 
     // Write closing entry
@@ -507,7 +516,7 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
   }
 
   pi.on("turn_end", async (_event, ctx) => {
-    if (fs.existsSync(traceFile)) {
+    if (traceFile && fs.existsSync(traceFile)) {
       const content = fs.readFileSync(traceFile, "utf-8");
       entryCount = (content.match(/^## /gm) || []).length;
     }
@@ -521,6 +530,11 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) {
         ctx.ui.notify("/scribe requires interactive mode", "error");
+        return;
+      }
+
+      if (!traceFile) {
+        ctx.ui.notify("No trace entries recorded yet this session", "info");
         return;
       }
 
@@ -553,6 +567,11 @@ Based on the latest exchange, should a new trace entry be added? Respond with th
     description: "Toggle scribe trace view",
     handler: async (ctx) => {
       if (!ctx.hasUI) return;
+
+      if (!traceFile) {
+        ctx.ui.notify("No trace entries recorded yet this session", "info");
+        return;
+      }
 
       const content = readTraceContents(traceFile);
       const lines = content.split("\n");
